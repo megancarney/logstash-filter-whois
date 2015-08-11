@@ -71,16 +71,30 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
           begin
             w = whois_client.lookup(raw)
             created_date = w.created_on
+            updated_date = w.updated_on
+            expired_date = w.expires_on
 
             # need to cast created_date
             # thanks to:
             # stackoverflow.com/questions/9032544/jruby-documentation-of-mappings-conversions-between-java-and-ruby-types-classes
             d = created_date.to_java(java.util.Date)
+            e = updated_date.to_java(java.util.Date)
+            f = expired_date.to_java(java.util.Date)
 
             create_field_epoch = field + "_whois_created_epoch"
             create_field_string = field + "_whois_created_string"
             event[create_field_epoch] = d.getTime/1000
             event[create_field_string] = d.toString
+
+            update_field_epoch = field + "_whois_updated_epoch"
+            update_field_string = field + "_whois_updated_string"
+            event[update_field_epoch] = e.getTime/1000
+            event[update_field_string] = e.toString
+
+            expire_field_epoch = field + "_whois_expires_epoch"
+            expire_field_string = field + "_whois_expires_string"
+            event[expire_field_epoch] = f.getTime/1000
+            event[expire_field_string] = f.toString
 
             rescue Exception => ex
               if retry_counter < max_tries then
