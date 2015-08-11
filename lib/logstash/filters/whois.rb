@@ -18,21 +18,19 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
   # Values are matched with prefixes respectively. In the 
   # example below, the filter would lookup the domain in a
   # field named 'domain_or_ip01' and then create fields like
-  # 'prefix01_creation', etc.
+  # 'domain_or_ip01_created_epoch', etc.
   #
   # The config should look like this:
   # [source,ruby]
   #     filter {
   #       whois {
   #         lookup_fields => [ "domain_or_ip01", "ip_or_domain02" ]
-  #         create_fields => [ "prefix01", "prefix02" ]
   #       }
   #     }
   config_name "whois"
   
   # Verify that our config values are an array
   config :lookup_fields, :validate => :array
-  config :create_fields, :validate => :array
 
   # Replace the message with this value.
   config :message, :validate => :string, :default => "Hello World!"
@@ -65,22 +63,28 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
           raw = raw.first
         end
         unless raw.nil?
-          @logger.warn("WHOIS: I found a lookup field value! ", :field => field, :value => raw)
+          #@logger.warn("WHOIS: I found a lookup field value! ", :field => field, :value => raw)
 
           retry_counter = 0
           max_tries = 10
 
           begin
             w = whois_client.lookup(raw)
+            created_date = w.created_on
+
+            # need to cast created_date
+            # thanks to:
+            # stackoverflow.com/questions/9032544/jruby-documentation-of-mappings-conversions-between-java-and-ruby-types-classes
+            d = created_date.to_java(java.util.Date)
+
             create_field_epoch = field + "_whois_created_epoch"
             create_field_string = field + "_whois_created_string"
-            #event[create_this_field] = Time.at(w.created_on.getTime/1000)
-            event[create_field_epoch] = java.util.Date.new.getTime
-            event[create_field_string] = w.created_on
+            event[create_field_epoch] = d.getTime/1000
+            event[create_field_string] = d.toString
 
             rescue Exception => ex
               if retry_counter < max_tries then
-                #puts ex.message
+                @logger.warn("WHOIS: exception thrown, will try again ", :message => ex.message.to_str)
                 retry_counter = retry_counter + 1
                 sleep 1
                 retry
@@ -89,19 +93,8 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
               end
           end
         end
-        #w = Whois.whois(raw)
       end
 
-      # Replace the event message with our message as configured in the
-      # config file.
-      #event["message"] = @message
-      #@logger.warn("WHOIS: first lookup")
-      #d = Whois.whois("google.com")
-      #event["dmessage"] = d.created_on
-      #@logger.warn("WHOIS: second lookup")
-      #c = Whois::Client.new
-      #d = c.lookup("google.com")
-      #event["cmessage"] = d.created_on
     end
 
     # filter_matched should go in the last line of our successful code
