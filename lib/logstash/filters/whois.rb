@@ -47,9 +47,12 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
   #     filter {
   #       whois {
   #         lookup_fields => [ "domain_or_ip01", "ip_or_domain02" ],
-  #         field_selection => "00000010101000000"
   #         # OPTIONAL parameter specifying that we want the created_on,
   #         # updated_on, and expires_on fields
+  #         field_selection => "00000010101000000"
+  #         # OPTIONAL parameter specifying which percentage of records
+  #         # should be processed, default is 100%
+  #         sample = "90"
   #       }
   #     }
   config_name "whois"
@@ -60,6 +63,10 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
   # Verify the field selection string 
   # by default, choose the created_on and updated_on data
   config :field_selection, :validate => :string, :default => "00000010100000000"
+
+  # Verify the field selection string 
+  # by default, choose the created_on and updated_on data
+  config :sample, :validate => :string, :default => "100"
 
   public
   def register
@@ -72,6 +79,21 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
   def filter(event)
 
     if @lookup_fields
+
+      if /^[1]{0,1}[0-9]{1,2}$/.match(@sample)
+        #@logger.warn("WHOIS: I matched!")
+      else
+        @sample = "100"
+        @logger.warn("WHOIS: sample value should be between 1 and 100 - ignoring config and using default value ", :sample => sample)
+      end
+
+      if @sample != "100"
+        j = rand(100)
+        @logger.warn("WHOIS: in sampling mode!", :j=>j.to_s, :sample=>sample)
+        if j > @sample.to_i
+          return
+        end
+      end
 
       #@logger.warn("WHOIS: field selection value is ", :field_selection => field_selection)
       # if the config string is not 17 0's or 1's, ignore
