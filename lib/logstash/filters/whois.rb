@@ -116,7 +116,8 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
           end
           raw = raw.first
         end
-        unless raw.nil?
+
+        unless raw.nil? || raw == ""
           #@logger.warn("WHOIS: I found a lookup field value! ", :field => field, :value => raw)
 
           retry_counter = 0
@@ -169,66 +170,86 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
             if @field_selection[6] == "1"
               create_field_epoch = field + "_whois_created_epoch"
               create_field_string = field + "_whois_created_string"
-              event[create_field_epoch] = d.getTime/1000
-              event[create_field_string] = d.toString
+              unless d.nil?
+                event[create_field_epoch] = d.getTime/1000
+                event[create_field_string] = d.toString
+              end
             end
 
             if @field_selection[7] == "1"
-              now = java.util.Date.new
-              create_field_delta = field + "_whois_created_delta"
-              event[create_field_delta] = now.getTime/1000 - d.getTime/1000
+              unless d.nil?
+                now = java.util.Date.new
+                create_field_delta = field + "_whois_created_delta"
+                event[create_field_delta] = now.getTime/1000 - d.getTime/1000
+              end
             end
 
             if @field_selection[8] == "1"
               update_field_epoch = field + "_whois_updated_epoch"
               update_field_string = field + "_whois_updated_string"
-              event[update_field_epoch] = e.getTime/1000
-              event[update_field_string] = e.toString
+              unless e.nil?
+                event[update_field_epoch] = e.getTime/1000
+                event[update_field_string] = e.toString
+              end
             end
 
             if @field_selection[9] == "1"
-              now = java.util.Date.new
-              update_field_delta = field + "_whois_updated_delta"
-              event[update_field_delta] = now.getTime/1000 - e.getTime/1000
+              unless e.nil?
+                now = java.util.Date.new
+                update_field_delta = field + "_whois_updated_delta"
+                event[update_field_delta] = now.getTime/1000 - e.getTime/1000
+              end
             end
 
             if @field_selection[10] == "1"
               expire_field_epoch = field + "_whois_expires_epoch"
               expire_field_string = field + "_whois_expires_string"
-              event[expire_field_epoch] = f.getTime/1000
-              event[expire_field_string] = f.toString
+              unless f.nil?
+                event[expire_field_epoch] = f.getTime/1000
+                event[expire_field_string] = f.toString
+              end
             end
 
             if @field_selection[11] == "1"
-              now = java.util.Date.new
-              expire_field_delta = field + "_whois_expires_delta"
-              event[expire_field_delta] = f.getTime/1000 - now.getTime/1000
+              unless f.nil?
+                now = java.util.Date.new
+                expire_field_delta = field + "_whois_expires_delta"
+                event[expire_field_delta] = f.getTime/1000 - now.getTime/1000
+              end
             end
 
             if @field_selection[12] == "1"
-              create_field_registrar_id = field + "_whois_registrar_id"
-              create_field_registrar_name = field + "_whois_registrar_name"
-              create_field_registrar_org = field + "_whois_registrar_org"
-              create_field_registrar_url = field + "_whois_registrar_url"
-              event[create_field_registrar_id] = w.registrar["id"]
-              event[create_field_registrar_name] = w.registrar["name"]
-              event[create_field_registrar_org] = w.registrar["organization"]
-              event[create_field_registrar_url] = w.registrar["url"]
+              unless w.registrar.nil?
+                create_field_registrar_id = field + "_whois_registrar_id"
+                create_field_registrar_name = field + "_whois_registrar_name"
+                create_field_registrar_org = field + "_whois_registrar_org"
+                create_field_registrar_url = field + "_whois_registrar_url"
+                event[create_field_registrar_id] = w.registrar["id"]
+                event[create_field_registrar_name] = w.registrar["name"]
+                event[create_field_registrar_org] = w.registrar["organization"]
+                event[create_field_registrar_url] = w.registrar["url"]
+              end
             end
 
             if @field_selection[13] == "1"
-              create_field_registrant_ctx = field + "_whois_registrant_contact"
-              event[create_field_registrant_ctx] = w.registrant_contacts[0]["email"]
+              unless w.registrant_contacts.nil?
+                create_field_registrant_ctx = field + "_whois_registrant_contact"
+                event[create_field_registrant_ctx] = w.registrant_contacts[0]["email"]
+              end
             end
 
             if @field_selection[14] == "1"
-              create_field_admin_ctx = field + "_whois_admin_contact"
-              event[create_field_admin_ctx] = w.admin_contacts[0]["email"]
+              unless w.admin_contacts.nil?
+                create_field_admin_ctx = field + "_whois_admin_contact"
+                event[create_field_admin_ctx] = w.admin_contacts[0]["email"]
+              end
             end
 
             if @field_selection[15] == "1"
-              create_field_technical_ctx = field + "_whois_technical_contact"
-              event[create_field_technical_ctx] = w.technical_contacts[0]["email"]
+              unless w.technical_contacts.nil?
+                create_field_technical_ctx = field + "_whois_technical_contact"
+                event[create_field_technical_ctx] = w.technical_contacts[0]["email"]
+              end
             end
 
             if @field_selection[16] == "1"
@@ -242,7 +263,6 @@ class LogStash::Filters::Whois < LogStash::Filters::Base
                 create_field_ipv6 = field + "_whois_nameserver" + i.to_s + "_ipv6"
                 event[create_field_nameserver] = w.nameservers[i]["name"]
                 event[create_field_ipv4] = w.nameservers[i]["ipv4"]
-                #event[create_field_ipv4] = "oogabooga"
                 event[create_field_ipv6] = w.nameservers[i]["ipv6"]
                 i = i+1
               end
